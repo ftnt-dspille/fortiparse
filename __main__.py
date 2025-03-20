@@ -5,7 +5,7 @@ This allows running FortiParse as:
 python -m fortiparse [args]
 """
 
-from .fortigate_parse import main
+from .fortiparse import main
 
 if __name__ == "__main__":
     main()

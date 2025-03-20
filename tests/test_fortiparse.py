@@ -6,7 +6,7 @@ import os
 import json
 import tempfile
 import pytest
-from fortigate_parse import FortiParser, parse_file, parse_text
+from fortiparse import FortiParser, parse_file, parse_text
 
 
 # Sample FortiGate configuration for testing
@@ -109,9 +109,9 @@ class TestFortiParser:
         
         global_settings = config["system"]["global"]
         assert global_settings["admintimeout"] == "120"
-        assert global_settings["alias"] == "FG1"
-        assert global_settings["hostname"] == "Branch1"
-        assert global_settings["timezone"] == "US/Pacific"
+        assert global_settings["alias"] == '"FG1"'
+        assert global_settings["hostname"] == '"Branch1"'
+        assert global_settings["timezone"] == '"US/Pacific"'
     
     def test_parse_interfaces(self):
         """Test parsing interfaces configuration."""
@@ -122,7 +122,7 @@ class TestFortiParser:
         
         # Check port1
         assert "port1" in interfaces
-        assert interfaces["port1"]["vdom"] == "root"
+        assert interfaces["port1"]["vdom"] == '"root"'
         assert interfaces["port1"]["ip"] == "192.168.0.3 255.255.255.0"
         assert interfaces["port1"]["allowaccess"] == "ping https ssh snmp http fgfm fabric"
         assert interfaces["port1"]["type"] == "physical"
@@ -130,7 +130,7 @@ class TestFortiParser:
         
         # Check port2
         assert "port2" in interfaces
-        assert interfaces["port2"]["vdom"] == "root"
+        assert interfaces["port2"]["vdom"] == '"root"'
         assert interfaces["port2"]["ip"] == "100.100.101.101 255.255.255.0"
         assert interfaces["port2"]["allowaccess"] == "ping fgfm"
         assert interfaces["port2"]["type"] == "physical"
@@ -145,24 +145,24 @@ class TestFortiParser:
         
         # Check policy 1
         assert "1" in policies
-        assert policies["1"]["srcintf"] == "port5"
-        assert policies["1"]["dstintf"] == "port1"
+        assert policies["1"]["srcintf"] == '"port5"'
+        assert policies["1"]["dstintf"] == '"port1"'
         assert policies["1"]["action"] == "accept"
-        assert policies["1"]["srcaddr"] == "Users_Subnet"
-        assert policies["1"]["dstaddr"] == "all"
-        assert policies["1"]["schedule"] == "always"
-        assert policies["1"]["service"] == "ALL"
+        assert policies["1"]["srcaddr"] == '"Users_Subnet"'
+        assert policies["1"]["dstaddr"] == '"all"'
+        assert policies["1"]["schedule"] == '"always"'
+        assert policies["1"]["service"] == '"ALL"'
         assert policies["1"]["logtraffic"] == "all"
         
         # Check policy 2
         assert "2" in policies
-        assert policies["2"]["srcintf"] == "port5"
-        assert policies["2"]["dstintf"] == "port2"
+        assert policies["2"]["srcintf"] == '"port5"'
+        assert policies["2"]["dstintf"] == '"port2"'
         assert policies["2"]["action"] == "accept"
-        assert policies["2"]["srcaddr"] == "Users_Subnet"
-        assert policies["2"]["dstaddr"] == "Server001"
-        assert policies["2"]["schedule"] == "always"
-        assert policies["2"]["service"] == "HTTP\" \"HTTPS"  # This is expected based on the current parser
+        assert policies["2"]["srcaddr"] == '"Users_Subnet"'
+        assert policies["2"]["dstaddr"] == '"Server001"'
+        assert policies["2"]["schedule"] == '"always"'
+        assert policies["2"]["service"] == '"HTTP\" \"HTTPS"'  # This is expected based on the current parser
         assert policies["2"]["logtraffic"] == "all"
     
     def test_to_json(self):
@@ -221,9 +221,9 @@ class TestFortiParser:
         
         assert len(policies) == 2
         assert policies[0]["id"] == "1"
-        assert policies[0]["srcintf"] == "port5"
+        assert policies[0]["srcintf"] == '"port5"'
         assert policies[1]["id"] == "2"
-        assert policies[1]["dstintf"] == "port2"
+        assert policies[1]["dstintf"] == '"port2"'
     
     def test_extract_interfaces(self):
         """Test extracting interfaces."""
@@ -234,7 +234,7 @@ class TestFortiParser:
         
         assert len(interfaces) == 2
         assert interfaces[0]["name"] == "port1"
-        assert interfaces[0]["vdom"] == "root"
+        assert interfaces[0]["vdom"] == '"root"'
         assert interfaces[1]["name"] == "port2"
         assert interfaces[1]["ip"] == "100.100.101.101 255.255.255.0"
 
@@ -245,7 +245,7 @@ def test_parse_file_function(sample_config_file):
     
     assert "system" in config
     assert "global" in config["system"]
-    assert config["system"]["global"]["hostname"] == "Branch1"
+    assert config["system"]["global"]["hostname"] == '"Branch1"'
 
 
 def test_parse_text_function():
@@ -254,4 +254,4 @@ def test_parse_text_function():
     
     assert "system" in config
     assert "global" in config["system"]
-    assert config["system"]["global"]["hostname"] == "Branch1"
+    assert config["system"]["global"]["hostname"] == '"Branch1"'
