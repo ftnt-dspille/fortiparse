@@ -48,6 +48,7 @@ class FortiParser:
         lines = self.config_text.split('\n')
         current_section = self.config_json
         section_stack = [current_section]
+        path_stack = []  # Track the section path
 
         i = 0
         while i < len(lines):
@@ -60,20 +61,21 @@ class FortiParser:
 
             # Handle config section starts
             if line.startswith('config '):
-                section_name = line[7:].strip()
+                # Extract section name (e.g., "system interface")
+                section_full_name = line[7:].strip()
+                section_parts = section_full_name.split()
 
-                # Create the section if it doesn't exist
-                if section_name not in current_section:
-                    current_section[section_name] = {}
-                # If it already exists as a dict, use it
-                elif isinstance(current_section[section_name], dict):
-                    pass
-                # If it exists but is not a dict, convert it to a dict with a "__value__" key
-                else:
-                    value = current_section[section_name]
-                    current_section[section_name] = {"__value__": value}
+                # For proper nesting, we need to create hierarchical path
+                for part in section_parts:
+                    # Create or get the section if it doesn't exist
+                    if part not in current_section:
+                        current_section[part] = {}
 
-                current_section = current_section[section_name]
+                    # Update current section and stack
+                    current_section = current_section[part]
+                    path_stack.append(part)
+
+                # Update section stack with current section
                 section_stack.append(current_section)
                 i += 1
                 continue
@@ -104,12 +106,18 @@ class FortiParser:
                     key = key_value_match.group(1)
                     value = key_value_match.group(2).strip()
 
-                    # Remove quotation marks from values
-                    if (value.startswith('"') and value.endswith('"')) or \
-                            (value.startswith("'") and value.endswith("'")):
-                        value = value[1:-1]
+                    # Special handling for space-separated quoted values (like members)
+                    # This keeps the original formatting with quotes
+                    if value.count('"') > 2 or ('"' in value and value.count('"') % 2 == 0):
+                        # Keep the value as is with quotes preserved
+                        current_section[key] = value
+                    else:
+                        # Regular single value, remove surrounding quotes if present
+                        if (value.startswith('"') and value.endswith('"')) or \
+                                (value.startswith("'") and value.endswith("'")):
+                            value = value[1:-1]
+                        current_section[key] = value
 
-                    current_section[key] = value
                     i += 1
                     continue
 
@@ -130,12 +138,16 @@ class FortiParser:
                 i += 1
                 continue
 
-            # Handle "end" - go back to root level for this config block
+            # Handle "end" - go back up the config hierarchy
             if line == 'end':
-                # Pop until we're back at the right level
-                while len(section_stack) > 1:
-                    section_stack.pop()
-                current_section = section_stack[0]
+                # Go back up to the previous config level
+                if path_stack:
+                    path_stack.pop()  # Remove last path segment
+
+                # Reset current section to appropriate level
+                section_stack.pop()  # Remove current section
+                if section_stack:  # Ensure the stack is not empty
+                    current_section = section_stack[-1]
                 i += 1
                 continue
 
@@ -150,7 +162,7 @@ class FortiParser:
 
         Args:
             indent: Number of spaces for indentation (default: 2)
-        
+
         Returns:
             JSON string representation of the configuration
         """
@@ -179,7 +191,7 @@ class FortiParser:
 
         Args:
             *path: Path to the section, as a sequence of keys
-        
+
         Returns:
             The requested section, or None if not found
         """
@@ -198,7 +210,7 @@ class FortiParser:
     def extract_policies(self) -> List[Dict[str, Any]]:
         """
         Extract firewall policies as a simplified list.
-        
+
         Returns:
             List of dictionaries containing policy information
         """
@@ -221,7 +233,7 @@ class FortiParser:
     def extract_interfaces(self) -> List[Dict[str, Any]]:
         """
         Extract interface configurations as a simplified list.
-        
+
         Returns:
             List of dictionaries containing interface information
         """
@@ -245,10 +257,10 @@ class FortiParser:
 def parse_file(filename: str) -> Dict[str, Any]:
     """
     Parse a FortiGate configuration file and return as a dictionary.
-    
+
     Args:
         filename: Path to the FortiGate configuration file
-    
+
     Returns:
         Dictionary containing parsed configuration
     """
@@ -259,10 +271,10 @@ def parse_file(filename: str) -> Dict[str, Any]:
 def parse_text(config_text: str) -> Dict[str, Any]:
     """
     Parse a FortiGate configuration string and return as a dictionary.
-    
+
     Args:
         config_text: String containing FortiGate configuration
-    
+
     Returns:
         Dictionary containing parsed configuration
     """
