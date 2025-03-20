@@ -11,7 +11,7 @@ import pytest
 from unittest.mock import patch
 from io import StringIO
 
-from fortiparse.fortigate_parse import main
+from fortiparse.fortiparse import main
 
 
 # Sample configuration for CLI testing
