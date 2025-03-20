@@ -1,17 +1,17 @@
 """
-FortiParse - A Python library to parse FortiGate configuration files into JSON.
+FortiParse - A Python library to parse FortiGate configuration files into JSON format.
 """
 
-__version__ = "0.1.0"
-
-from .fortigate_parse import (
+from .fortiparse import (
     FortiParser,
     parse_file,
-    parse_text
+    parse_text,
+    main
 )
 
 __all__ = [
     'FortiParser',
     'parse_file',
     'parse_text',
+    'main'
 ]

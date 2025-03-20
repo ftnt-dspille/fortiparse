@@ -1,0 +1,4 @@
+config system global
+    set hostname "TestFirewall"
+    set timezone "UTC"
+end

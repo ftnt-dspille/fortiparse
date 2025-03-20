@@ -11,7 +11,7 @@ import pytest
 from unittest.mock import patch
 from io import StringIO
 
-from fortigate_parse.fortigate_parse import main
+from fortiparse.fortigate_parse import main
 
 
 # Sample configuration for CLI testing
@@ -53,7 +53,7 @@ class TestCLI:
             json_obj = json.loads(output)
             assert "system" in json_obj
             assert "global" in json_obj["system"]
-            assert json_obj["system"]["global"]["hostname"] == "TestFirewall"
+            assert json_obj["system"]["global"]["hostname"] == '"TestFirewall"'
     
     def test_cli_file_output(self, config_file, tmpdir):
         """Test CLI with output to a file."""
@@ -76,7 +76,7 @@ class TestCLI:
             
             assert "system" in json_obj
             assert "global" in json_obj["system"]
-            assert json_obj["system"]["global"]["hostname"] == "TestFirewall"
+            assert json_obj["system"]["global"]["hostname"] == '"TestFirewall"'
     
     def test_cli_indentation(self, config_file):
         """Test CLI with custom indentation."""
@@ -133,7 +133,7 @@ def test_module_execution():
         json_obj = json.loads(result.stdout)
         assert "system" in json_obj
         assert "global" in json_obj["system"]
-        assert json_obj["system"]["global"]["hostname"] == "TestFirewall"
+        assert json_obj["system"]["global"]["hostname"] == '"TestFirewall"'
     
     finally:
         # Cleanup

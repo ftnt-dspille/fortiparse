@@ -1,6 +1,8 @@
-# Core dependencies - minimal as the project mainly uses standard library
-# No external runtime dependencies required
+# Include regular requirements
+-r requirements.txt
 
-# Development dependencies
+# Additional development tools
 pytest>=7.0.0
 pytest-cov>=4.0.0
+mypy>=1.0.0
+tox>=4.0.0

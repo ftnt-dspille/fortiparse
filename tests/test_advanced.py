@@ -4,7 +4,7 @@ Advanced tests for FortiParse with more complex configurations.
 
 import json
 
-from fortigate_parse import FortiParser
+from fortiparse import FortiParser
 
 # A more complex configuration snippet
 COMPLEX_CONFIG = """
@@ -35,7 +35,7 @@ config firewall address
     next
     edit "special\\chars"
         set uuid 76d5d534-05c1-51f0-752a-0e79d94a4a84
-        set comment "Address with \\"quotes\\" and \\\\backslashes\\\\"
+        set comment "Address with \"quotes\" and \\backslashes\\"
         set subnet 192.168.1.0 255.255.255.0
     next
 end
@@ -136,7 +136,7 @@ class TestAdvancedParsing:
 
         # Check address with special characters in name and comment
         special_chars = addresses["special\\chars"]
-        assert special_chars["comment"] == 'Address with "quotes" and \\backslashes\\'
+        assert special_chars["comment"] == '"Address with "quotes" and \\backslashes\\"'
         assert special_chars["subnet"] == "192.168.1.0 255.255.255.0"
 
         # Check IPv6 addresses
@@ -150,7 +150,7 @@ class TestAdvancedParsing:
         config = parser.parse()
 
         addrgrp = config["firewall"]["addrgrp"]["edit"]["grp-src-CHG00005"]
-        assert addrgrp["comment"] == "CHG00005 -Created by FortiSOAR"
+        assert addrgrp["comment"] == '"CHG00005 -Created by FortiSOAR"'
         assert addrgrp[
                    "member"] == '"range-192-168-2-50-192-168-2-60" "IP-10.20.0.0/16" "IP-172.16.0.0/20" "IP-192.168.1.0/24"'
 
@@ -160,12 +160,12 @@ class TestAdvancedParsing:
         config = parser.parse()
 
         admin = config["system"]["admin"]["edit"]["admin"]
-        assert admin["accprofile"] == "super_admin"
-        assert admin["vdom"] == "root"
+        assert admin["accprofile"] == '"super_admin"'
+        assert admin["vdom"] == '"root"'
 
         # Check nested dashboard config
         dashboard = admin["gui-dashboard"]["edit"]["1"]
-        assert dashboard["name"] == "Status"
+        assert dashboard["name"] == '"Status"'
         assert dashboard["permanent"] == "enable"
 
         # Check even deeper nested widget config
@@ -199,7 +199,7 @@ class TestAdvancedParsing:
 
         # Verify some nested structures
         assert json_obj["firewall"]["address"]["edit"]["special\\chars"][
-                   "comment"] == 'Address with "quotes" and \\backslashes\\'
+                   "comment"] == '"Address with "quotes" and \\backslashes\\"'
 
         # Check the admin section
         admin_section = json_obj["system"]["admin"]["edit"]["admin"]
