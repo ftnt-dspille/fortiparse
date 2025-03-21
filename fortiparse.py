@@ -104,18 +104,50 @@ class FortiParser:
                 key_value_match = re.match(r'set\s+([^\s]+)\s+(.+)', line)
                 if key_value_match:
                     key = key_value_match.group(1)
-                    value = key_value_match.group(2).strip()
+                    raw_value = key_value_match.group(2).strip()
 
-                    # Special handling for space-separated quoted values (like members)
-                    # This keeps the original formatting with quotes
-                    if value.count('"') > 2 or ('"' in value and value.count('"') % 2 == 0):
-                        # Keep the value as is with quotes preserved
-                        current_section[key] = value
+                    # Check if this is a multi-value quoted string (like member lists)
+                    if ' "' in raw_value and raw_value.count('"') >= 4 and not raw_value.count('\\"'):
+                        # This appears to be a list of quoted items
+                        # We'll parse and rebuild it as a list
+                        quoted_pattern = re.compile(r'"([^"]*)"')
+                        matches = quoted_pattern.findall(raw_value)
+
+                        if matches:
+                            # Store as a list if we found multiple quoted strings
+                            current_section[key] = matches
+                        else:
+                            # Fallback: store as is if the regex didn't match
+                            current_section[key] = raw_value
                     else:
-                        # Regular single value, remove surrounding quotes if present
-                        if (value.startswith('"') and value.endswith('"')) or \
-                                (value.startswith("'") and value.endswith("'")):
+                        # Handle regular single-value with or without quotes
+                        value = raw_value
+
+                        # Process quoted values with possible escape sequences
+                        if (value.startswith('"') and value.endswith('"')):
+                            # Extract the content between quotes
+                            quoted_content = value[1:-1]
+
+                            # Handle escape sequences properly
+                            # Replace escaped quotes with temporary markers
+                            temp_quote = "__TEMP_QUOTE__"
+                            temp_backslash = "__TEMP_BACKSLASH__"
+
+                            # First handle double backslashes
+                            quoted_content = quoted_content.replace("\\\\", temp_backslash)
+
+                            # Then handle escaped quotes
+                            quoted_content = quoted_content.replace('\\"', temp_quote)
+
+                            # Finally, restore the original characters with their proper representation
+                            quoted_content = quoted_content.replace(temp_quote, '"')
+                            quoted_content = quoted_content.replace(temp_backslash, '\\')
+
+                            value = quoted_content
+                        elif (value.startswith("'") and value.endswith("'")):
+                            # Simple single quotes without escaping
                             value = value[1:-1]
+
                         current_section[key] = value
 
                     i += 1
