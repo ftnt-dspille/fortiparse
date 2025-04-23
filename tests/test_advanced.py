@@ -115,6 +115,94 @@ config firewall address
 end
 """
 
+MULTI_LINE_COMMENTS_CONFIG = """
+#config-version=FGXXXX-X.X.XX-FW-buildXXXX-XXXXXX:opmode=0:vdom=1:user=xxxxx
+#conf_file_ver=XXXXXXXXXXXX
+#buildno=XXXX
+#global_vdom=0:vd_name=XXXX-XXXX/XXXX-XXXX
+#private-encryption-key=/XXXXXXXXXXXXXXXXXXXX=
+config system interface
+    edit "portX"
+        set vdom "XXXX-XXXX"
+        set ip 10.0.0.1 255.255.255.0
+        set allowaccess ping
+        set arpforward disable
+        set icmp-send-redirect disable
+        set icmp-accept-redirect disable
+        set type physical
+        set netflow-sampler both
+        set mediatype sr
+        set alias "OUTSIDE-WANX"
+        set lldp-reception enable
+        set lldp-transmission disable
+        set monitor-bandwidth enable
+        set role wan
+        set snmp-index X
+        set speed 10000full
+    next
+    edit "portX"
+        set vdom "XXXX-XXXX"
+        set mode dhcp
+        set arpforward disable
+        set icmp-send-redirect disable
+        set icmp-accept-redirect disable
+        set status down
+        set type physical
+        set netflow-sampler both
+        set mediatype sr
+        set alias "OUTSIDE-WANX"
+        set lldp-reception enable
+        set lldp-transmission disable
+        set role wan
+        set snmp-index XX
+        set speed 10000full
+    next
+end
+config firewall address
+    edit "NET_Guest"
+        set uuid xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
+        set subnet 10.0.0.0 255.255.255.0
+    next
+    edit "DMZ-NET"
+        set uuid xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
+        set comment "YYYYMMDD - XXX - TICKETXXX - Description"
+        set subnet 10.0.0.0 255.255.255.0
+    next
+    edit "SERVER01"
+        set uuid xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
+        set comment "YYYYMMDD - XXX - TICKETXXX - Description
+YYYYMMDD - XXX - TICKETXXX"
+        set subnet 10.0.0.0 255.255.255.255
+    next
+    edit "CountryA"
+        set uuid xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
+        set type geography
+        set color 1
+        set country "XX"
+    next
+    edit "CountryB"
+        set uuid xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
+        set type geography
+        set color 1
+        set country "XX"
+    next
+    edit "Service_Provider_domain1.com"
+        set uuid xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
+        set type fqdn
+        set comment "TICKETXXX - Description - Service Provider"
+        set color 1
+        set fqdn "domain1.com"
+    next
+    edit "Service_Provider_domain2.com"
+        set uuid xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
+        set type fqdn
+        set comment "TICKETXXX - Description - Service Provider"
+        set color 1
+        set fqdn "domain2.com"
+    next
+end
+"""
+
 
 class TestAdvancedParsing:
     """Test suite for more complex FortiGate configurations."""
@@ -151,8 +239,8 @@ class TestAdvancedParsing:
 
         addrgrp = config["firewall"]["addrgrp"]["edit"]["grp-src-CHG00005"]
         assert addrgrp["comment"] == 'CHG00005 -Created by FortiSOAR'
-        assert addrgrp[
-                   "member"] == ['range-192-168-2-50-192-168-2-60', 'IP-10.20.0.0/16', 'IP-172.16.0.0/20', 'IP-192.168.1.0/24']
+        assert addrgrp["member"] == ['range-192-168-2-50-192-168-2-60', 'IP-10.20.0.0/16', 'IP-172.16.0.0/20',
+                                     'IP-192.168.1.0/24']
 
     def test_nested_admin_config(self):
         """Test parsing of deeply nested admin configurations."""
@@ -208,3 +296,29 @@ class TestAdvancedParsing:
 
         # Check the password field is preserved
         assert admin_section["password"] == "ENC SH2/15tGAUKCPmQxglzmAKSQlpekOc5pLcLA5DzZKZtF9S77xCRIMpqkO1HQWA="
+
+    def test_multiline_comment_parsing(self):
+        """Test parsing of multiline comments in FortiGate configurations."""
+        parser = FortiParser(config_text=MULTI_LINE_COMMENTS_CONFIG)
+        config = parser.parse()
+
+        # Check the firewall address with a multiline comment
+        addresses = config["firewall"]["address"]["edit"]
+        assert "SERVER01" in addresses
+
+        # Verify the multiline comment was properly captured with the newline preserved
+        server_comment = addresses["SERVER01"]["comment"]
+        assert "YYYYMMDD - XXX - TICKETXXX - Description\nYYYYMMDD - XXX - TICKETXXX" == server_comment
+
+        # Verify the comment is properly split across lines when checking line by line
+        comment_lines = server_comment.split('\n')
+        assert len(comment_lines) == 2
+        assert comment_lines[0] == "YYYYMMDD - XXX - TICKETXXX - Description"
+        assert comment_lines[1] == "YYYYMMDD - XXX - TICKETXXX"
+
+        # Verify the subnet information was also captured correctly
+        assert addresses["SERVER01"]["subnet"] == "10.0.0.0 255.255.255.255"
+
+        # Also verify another address object with a single-line comment
+        assert "DMZ-NET" in addresses
+        assert addresses["DMZ-NET"]["comment"] == "YYYYMMDD - XXX - TICKETXXX - Description"

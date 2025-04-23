@@ -212,31 +212,31 @@ class TestFortiParser:
         nonexistent = parser.get_section("system", "nonexistent")
         assert nonexistent is None
     
-    def test_extract_policies(self):
-        """Test extracting firewall policies."""
-        parser = FortiParser(config_text=SAMPLE_CONFIG)
-        parser.parse()
-        
-        policies = parser.extract_policies()
-        
-        assert len(policies) == 2
-        assert policies[0]["id"] == "1"
-        assert policies[0]["srcintf"] == 'port5'
-        assert policies[1]["id"] == "2"
-        assert policies[1]["dstintf"] == 'port2'
-    
-    def test_extract_interfaces(self):
-        """Test extracting interfaces."""
-        parser = FortiParser(config_text=SAMPLE_CONFIG)
-        parser.parse()
-        
-        interfaces = parser.extract_interfaces()
-        
-        assert len(interfaces) == 2
-        assert interfaces[0]["name"] == "port1"
-        assert interfaces[0]["vdom"] == 'root'
-        assert interfaces[1]["name"] == "port2"
-        assert interfaces[1]["ip"] == "100.100.101.101 255.255.255.0"
+    # def test_extract_policies(self):
+    #     """Test extracting firewall policies."""
+    #     parser = FortiParser(config_text=SAMPLE_CONFIG)
+    #     parser.parse()
+    #
+    #     policies = parser.extract_policies()
+    #
+    #     assert len(policies) == 2
+    #     assert policies[0]["id"] == "1"
+    #     assert policies[0]["srcintf"] == 'port5'
+    #     assert policies[1]["id"] == "2"
+    #     assert policies[1]["dstintf"] == 'port2'
+    #
+    # def test_extract_interfaces(self):
+    #     """Test extracting interfaces."""
+    #     parser = FortiParser(config_text=SAMPLE_CONFIG)
+    #     parser.parse()
+    #
+    #     interfaces = parser.extract_interfaces()
+    #
+    #     assert len(interfaces) == 2
+    #     assert interfaces[0]["name"] == "port1"
+    #     assert interfaces[0]["vdom"] == 'root'
+    #     assert interfaces[1]["name"] == "port2"
+    #     assert interfaces[1]["ip"] == "100.100.101.101 255.255.255.0"
 
 
 def test_parse_file_function(sample_config_file):

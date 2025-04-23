@@ -7,7 +7,7 @@ structured JSON objects that can be easily manipulated with Python.
 
 import json
 import re
-from typing import Dict, List, Optional, Any
+from typing import Dict, Optional, Any
 
 
 class FortiParser:
@@ -38,6 +38,7 @@ class FortiParser:
     def parse(self) -> Dict[str, Any]:
         """
         Parse the FortiGate configuration into a JSON object.
+        Handles multiline quoted strings.
 
         Returns:
             Dict containing the parsed configuration
@@ -101,10 +102,35 @@ class FortiParser:
 
             # Handle "set" statements
             if line.startswith('set '):
-                key_value_match = re.match(r'set\s+([^\s]+)\s+(.+)', line)
-                if key_value_match:
-                    key = key_value_match.group(1)
-                    raw_value = key_value_match.group(2).strip()
+                # First, extract the key
+                key_match = re.match(r'set\s+([^\s]+)(?:\s+(.*))?', line)
+                if key_match:
+                    key = key_match.group(1)
+                    raw_value = key_match.group(2) if key_match.group(2) else ""
+
+                    # Check if this is a multiline quoted string
+                    if raw_value.count('"') % 2 != 0:  # Odd number of quotes means unclosed quote
+                        # Start collecting the multiline string
+                        multiline_value = raw_value
+                        j = i + 1
+
+                        # Continue collecting lines until we find the closing quote
+                        while j < len(lines):
+                            next_line = lines[j].strip()
+                            multiline_value += "\n" + next_line
+
+                            # If we find a closing quote not preceded by a backslash, we're done
+                            if '"' in next_line and next_line.rstrip().endswith(
+                                    '"') and not next_line.rstrip().endswith('\\"'):
+                                break
+
+                            j += 1
+
+                        # Update raw_value with our collected multiline string
+                        raw_value = multiline_value
+                        i = j + 1  # Skip past the lines we've consumed
+                    else:
+                        i += 1
 
                     # Check if this is a multi-value quoted string (like member lists)
                     if ' "' in raw_value and raw_value.count('"') >= 4 and not raw_value.count('\\"'):
@@ -150,7 +176,6 @@ class FortiParser:
 
                         current_section[key] = value
 
-                    i += 1
                     continue
 
             # Handle "unset" statements
@@ -185,7 +210,6 @@ class FortiParser:
 
             # Default case - just move to next line
             i += 1
-
         return self.config_json
 
     def to_json(self, indent: int = 2) -> str:
@@ -238,52 +262,6 @@ class FortiParser:
                 return None
 
         return current
-
-    def extract_policies(self) -> List[Dict[str, Any]]:
-        """
-        Extract firewall policies as a simplified list.
-
-        Returns:
-            List of dictionaries containing policy information
-        """
-        policies = []
-
-        if not self.config_json:
-            self.parse()
-
-        firewall_policy = self.get_section("firewall", "policy")
-        if not firewall_policy or "edit" not in firewall_policy:
-            return policies
-
-        for policy_id, policy_data in firewall_policy["edit"].items():
-            policy = {"id": policy_id}
-            policy.update(policy_data)
-            policies.append(policy)
-
-        return policies
-
-    def extract_interfaces(self) -> List[Dict[str, Any]]:
-        """
-        Extract interface configurations as a simplified list.
-
-        Returns:
-            List of dictionaries containing interface information
-        """
-        interfaces = []
-
-        if not self.config_json:
-            self.parse()
-
-        system_interface = self.get_section("system", "interface")
-        if not system_interface or "edit" not in system_interface:
-            return interfaces
-
-        for intf_name, intf_data in system_interface["edit"].items():
-            intf = {"name": intf_name}
-            intf.update(intf_data)
-            interfaces.append(intf)
-
-        return interfaces
 
 
 def parse_file(filename: str) -> Dict[str, Any]:

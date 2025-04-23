@@ -60,11 +60,6 @@ parser.parse()
 # Get a specific section
 interfaces = parser.get_section("system", "interface")
 
-# Extract all firewall policies
-policies = parser.extract_policies()
-
-# Extract all interfaces
-interfaces_list = parser.extract_interfaces()
 ```
 
 ## Key Features
